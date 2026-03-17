@@ -1,6 +1,6 @@
 # Jot 
 
-A terminal-native note-taking utility written in Go. 
+A terminal-native note-taking tool written in Go. 
 
 ## Features
 
