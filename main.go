@@ -231,6 +231,27 @@ func exportJSON() {
 	fmt.Printf("Exported %d notes to %s\n", len(exportedNotes), exportPath)
 }
 
+func printHelp() {
+	helpText := `
+
+		USAGE:
+		jot <your note text>    Saves a new note with a timestamp.
+
+		COMMANDS:
+		view                    Displays all saved notes.
+		search <term>           Searches for notes containing the term.
+		delete <term>           Deletes all notes containing the exact term.
+		tail [number]           Displays the last N notes (defaults to 5).
+		export                  Exports all notes to 'jot_export.json'.
+		help                    Displays this help menu.
+
+		ENVIRONMENT:
+		JOT_PATH                Override the default save location (~/Documents/jot.txt).
+								Example: export JOT_PATH="/tmp/notes.txt"
+		`
+	fmt.Println(helpText)
+}
+
 func check(err error, message string) {
 	if err != nil {
 		fmt.Printf("%s: %v\n", message, err)
@@ -277,6 +298,8 @@ func main() {
 		tailNote(lineCount)
 	case "export":
 		exportJSON()
+	case "help":
+		printHelp()
 	default:
 		userInput(userNote)
 	}
