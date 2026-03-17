@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -138,7 +139,31 @@ func deleteNote(searchTerm string) {
 	check(err, "Could not rename temp file")
 
 	fmt.Println("Deleted notes matching:", searchTerm)
+}
 
+func tailNote(n int) {
+
+	file, err := os.Open(getPath())
+
+	if os.IsNotExist(err) {
+		fmt.Println("No notes found. Try creating a new note first.")
+		return
+	}
+
+	check(err, "Could not find file")
+	defer file.Close()
+
+	buffer := make([]string, n)
+
+	count := 0
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		buffer[count%n] = scanner.Text()
+		count++
+	}
+
+	check(scanner.Err(), "Error reading file.")
 }
 
 func check(err error, message string) {
@@ -175,6 +200,18 @@ func main() {
 		}
 		searchTerm := strings.Join(userNote[1:], " ")
 		deleteNote(searchTerm)
+	case "tail":
+		lineCount := 5
+		if len(userNote) > 1 {
+			parsedNum, err := strconv.Atoi(userNote[1])
+
+			if err == nil && parsedNum > 0 {
+				lineCount = parsedNum
+			} else {
+				fmt.Println("Invalid number: Using default of 5.")
+			}
+		}
+		tailNote(lineCount)
 	default:
 		userInput(userNote)
 	}
