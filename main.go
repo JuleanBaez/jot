@@ -263,8 +263,8 @@ func main() {
 	userNote := os.Args[1:]
 
 	if len(userNote) == 0 {
-		fmt.Println("Usage: jot <command> [arguments]")
-		os.Exit(1)
+		printHelp()
+		os.Exit(0)
 	}
 
 	switch userNote[0] {
