@@ -11,6 +11,8 @@ import (
 const (
 	timestampLayout = "2006-01-02 15:04:05"
 	defaultFileName = "/Documents/jot.txt"
+	ColorCyan       = "\033[36m"
+	ColorReset      = "\033[0m"
 )
 
 func getPath() string {
@@ -37,7 +39,7 @@ func userInput(userNote []string) {
 	passedNote := strings.Join(userNote, " ")
 
 	formattedTime := time.Now().Format(timestampLayout)
-	finalLine := fmt.Sprintf("[%s] %s\n", formattedTime, passedNote)
+	finalLine := fmt.Sprintf("%s[%s]%s %s\n", ColorCyan, formattedTime, ColorReset, passedNote)
 
 	findFile(finalLine)
 }
@@ -59,8 +61,13 @@ func findFile(noteText string) {
 func viewNote() {
 
 	file, err := os.Open(getPath())
-	check(err, "Failed to get file")
 
+	if os.IsNotExist(err) {
+		fmt.Println("No notes found. Try creating a new note first.")
+		return
+	}
+
+	check(err, "Failed to open file")
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
@@ -70,12 +77,16 @@ func viewNote() {
 }
 
 func searchNote(searchTerm string) {
-
 	// scans the jot file for lines containing the searchTerm
 	// and prints matching lines to the terminal.
 	file, err := os.Open(getPath())
-	check(err, "Failed to get file")
 
+	if os.IsNotExist(err) {
+		fmt.Println("No notes found. Try creating a new note first.")
+		return
+	}
+
+	check(err, "Failed to get file")
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
@@ -97,6 +108,11 @@ func deleteNote(searchTerm string) {
 	tempPath := filePath + ".tmp"
 
 	originalFile, err := os.Open(filePath)
+
+	if os.IsNotExist(err) {
+		fmt.Println("No notes found. Try creating a new note first.")
+		return
+	}
 
 	check(err, "Could not open original file")
 	defer originalFile.Close()
@@ -146,6 +162,10 @@ func main() {
 	case "view":
 		viewNote()
 	case "search":
+		if len(userNote) < 2 {
+			fmt.Println("Usage: jot search <search term>")
+			os.Exit(1)
+		}
 		searchTerm := strings.Join(userNote[1:], " ")
 		searchNote(searchTerm)
 	case "delete":
