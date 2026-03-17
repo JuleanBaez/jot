@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
@@ -16,11 +17,17 @@ const (
 	ColorReset      = "\033[0m"
 )
 
+type Note struct {
+	Timestamp string `json:"timestamp"`
+	Content   string `json:"content"`
+}
+
 func getPath() string {
 
 	// determines the storage location. prioritizes the JOT_PATH and falls back to
 	// a default location in the Documents folder.
 	path := os.Getenv("JOT_PATH")
+
 	if path == "" {
 		homeDir, err := os.UserHomeDir()
 
@@ -36,7 +43,6 @@ func getPath() string {
 }
 
 func userInput(userNote []string) {
-
 	passedNote := strings.Join(userNote, " ")
 
 	formattedTime := time.Now().Format(timestampLayout)
@@ -46,7 +52,6 @@ func userInput(userNote []string) {
 }
 
 func findFile(noteText string) {
-
 	filePath := getPath()
 
 	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -60,7 +65,6 @@ func findFile(noteText string) {
 }
 
 func viewNote() {
-
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
@@ -104,7 +108,6 @@ func searchNote(searchTerm string) {
 }
 
 func deleteNote(searchTerm string) {
-
 	filePath := getPath()
 	tempPath := filePath + ".tmp"
 
@@ -142,7 +145,6 @@ func deleteNote(searchTerm string) {
 }
 
 func tailNote(n int) {
-
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
@@ -177,13 +179,58 @@ func tailNote(n int) {
 		startIndex := count % n
 		for i := 0; i < n; i++ {
 			printIndex := (startIndex + i) % n
-			fmt.Println(buffer[(printIndex+i)%n])
+			fmt.Println(buffer[(printIndex)])
 		}
 	}
 }
 
-func check(err error, message string) {
+func exportJSON() {
+	file, err := os.Open(getPath())
 
+	if os.IsNotExist(err) {
+		fmt.Println("No notes found. Try creating a new note first.")
+		return
+	}
+
+	check(err, "Failed to open file.")
+	defer file.Close()
+
+	var exportedNotes []Note
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+
+		line := scanner.Text()
+
+		delimiter := "]" + ColorReset + " "
+
+		parts := strings.SplitN(line, delimiter, 2)
+
+		if len(parts) == 2 {
+			cleanTimestamp := strings.Replace(parts[0], ColorCyan+"[", "", 1)
+			cleanNote := parts[1]
+
+			exportedNotes = append(exportedNotes, Note{
+				Timestamp: cleanTimestamp,
+				Content:   cleanNote,
+			})
+		}
+	}
+
+	check(scanner.Err(), "Error reading file.")
+
+	jsonData, err := json.MarshalIndent(exportedNotes, "", "  ")
+	check(err, "Failed to encode JSON.")
+
+	exportPath := "jot_export.json"
+
+	err = os.WriteFile(exportPath, jsonData, 0644)
+	check(err, "Failed to write JSON file.")
+
+	fmt.Printf("Exported %d notes to %s\n", len(exportedNotes), exportPath)
+}
+
+func check(err error, message string) {
 	if err != nil {
 		fmt.Printf("%s: %v\n", message, err)
 		os.Exit(1)
@@ -191,7 +238,6 @@ func check(err error, message string) {
 }
 
 func main() {
-
 	userNote := os.Args[1:]
 
 	if len(userNote) == 0 {
@@ -228,6 +274,8 @@ func main() {
 			}
 		}
 		tailNote(lineCount)
+	case "export":
+		exportJSON()
 	default:
 		userInput(userNote)
 	}
