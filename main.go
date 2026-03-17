@@ -15,6 +15,7 @@ const (
 	defaultFileName = "/Documents/jot.txt"
 	ColorCyan       = "\033[36m"
 	ColorReset      = "\033[0m"
+	ColorYellow     = "\033[33m"
 	noNotes         = "No notes found. Try creating a new note first."
 )
 
@@ -232,24 +233,60 @@ func exportJSON() {
 }
 
 func printHelp() {
-	helpText := `
 
-		USAGE:
-		jot <your note text>    Saves a new note with a timestamp.
+	helpText := fmt.Sprintf(`
+		%sJOT - CLI Note & Task Manager%s
+		Usage: jot <command> [arguments] or jot "your note text"
 
-		COMMANDS:
-		view                    Displays all saved notes.
-		search <term>           Searches for notes containing the term.
-		delete <term>           Deletes all notes containing the exact term.
-		tail [number]           Displays the last N notes (defaults to 5).
-		export                  Exports all notes to 'jot_export.json'.
-		help                    Displays this help menu.
+		%sGENERAL NOTES%s
+		view                Show all jots in chronological order
+		search <term>       Find jots containing a specific word
+		tail [n]            Show the last n jots (default: 5)
+		delete <term>       Remove jots matching a specific term
 
-		ENVIRONMENT:
-		JOT_PATH                Override the default save location (~/Documents/jot.txt).
-								Example: export JOT_PATH="/tmp/notes.txt"
-		`
+		%sSTICKY TASKS (PINNED)%s
+		pin <text>          Save a note with a [PIN] tag for tracking
+		board               Display only your pinned sticky notes
+
+		%sDATA & SYSTEM%s
+		export              Export all jots to 'jot_export.json'
+		help                Show this menu
+		
+		%sENVIRONMENT%s
+		JOT_PATH            Set custom storage (Default: ~/Documents/jot.txt)
+		`, ColorCyan, ColorReset, ColorCyan, ColorReset, ColorYellow, ColorReset, ColorCyan, ColorReset, ColorCyan, ColorReset)
+
 	fmt.Println(helpText)
+}
+
+func viewPinned() {
+
+	file, err := os.Open(getPath())
+
+	if os.IsNotExist(err) {
+		fmt.Println(noNotes)
+		return
+	}
+
+	check(err, "Failed to open file.")
+	defer file.Close()
+
+	fmt.Println(ColorYellow + "-- Pinned Notes ---" + ColorReset)
+
+	scanner := bufio.NewScanner(file)
+	found := false
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "[PIN]") {
+			fmt.Println(ColorYellow + line + ColorReset)
+			found = true
+		}
+	}
+
+	if !found {
+		fmt.Println("No pinned notes found.")
+	}
 }
 
 func check(err error, message string) {
@@ -300,6 +337,15 @@ func main() {
 		exportJSON()
 	case "help":
 		printHelp()
+	case "pin":
+		if len(userNote) < 2 {
+			fmt.Println("Usage: jot pin <task>")
+			os.Exit(1)
+		}
+		pinnedNote := append([]string{"[PIN]"}, userNote[1:]...)
+		userInput(pinnedNote)
+	case "board":
+		viewPinned()
 	default:
 		userInput(userNote)
 	}
