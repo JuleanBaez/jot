@@ -15,6 +15,7 @@ const (
 	defaultFileName = "/Documents/jot.txt"
 	ColorCyan       = "\033[36m"
 	ColorReset      = "\033[0m"
+	noNotes         = "No notes found. Try creating a new note first."
 )
 
 type Note struct {
@@ -68,7 +69,7 @@ func viewNote() {
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
-		fmt.Println("No notes found. Try creating a new note first.")
+		fmt.Println(noNotes)
 		return
 	}
 
@@ -87,7 +88,7 @@ func searchNote(searchTerm string) {
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
-		fmt.Println("No notes found. Try creating a new note first.")
+		fmt.Println(noNotes)
 		return
 	}
 
@@ -114,7 +115,7 @@ func deleteNote(searchTerm string) {
 	originalFile, err := os.Open(filePath)
 
 	if os.IsNotExist(err) {
-		fmt.Println("No notes found. Try creating a new note first.")
+		fmt.Println(noNotes)
 		return
 	}
 
@@ -148,7 +149,7 @@ func tailNote(n int) {
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
-		fmt.Println("No notes found. Try creating a new note first.")
+		fmt.Println(noNotes)
 		return
 	}
 
@@ -188,7 +189,7 @@ func exportJSON() {
 	file, err := os.Open(getPath())
 
 	if os.IsNotExist(err) {
-		fmt.Println("No notes found. Try creating a new note first.")
+		fmt.Println(noNotes)
 		return
 	}
 
