@@ -164,6 +164,22 @@ func tailNote(n int) {
 	}
 
 	check(scanner.Err(), "Error reading file.")
+
+	if count == 0 {
+		return
+	}
+
+	if count < n {
+		for i := 0; i < count; i++ {
+			fmt.Println(buffer[i])
+		}
+	} else {
+		startIndex := count % n
+		for i := 0; i < n; i++ {
+			printIndex := (startIndex + i) % n
+			fmt.Println(buffer[(printIndex+i)%n])
+		}
+	}
 }
 
 func check(err error, message string) {
