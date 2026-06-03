@@ -1,4 +1,9 @@
+# compiled binary
 jot
-go.mod
 
-.gitignore
+# sensitive credentials and tokens — never commit these
+credentials.json
+config.json
+token.json
+chat_token.json
+*.token.json

@@ -1,0 +1,46 @@
+{{define "quick_actions"}}
+<div class="qa-forms">
+
+  <form class="qa-form"
+        hx-post="/ad/reset"
+        hx-target="#reset-result"
+        hx-swap="innerHTML">
+    <label class="qa-label">Reset password</label>
+    <div class="qa-row">
+      <input type="text" name="username" placeholder="username" autocomplete="off" required>
+      <button type="submit">Reset</button>
+    </div>
+    <div id="reset-result" class="qa-result"></div>
+  </form>
+
+  <form class="qa-form"
+        hx-post="/ad/unlock"
+        hx-target="#unlock-result"
+        hx-swap="innerHTML">
+    <label class="qa-label">Unlock account</label>
+    <div class="qa-row">
+      <input type="text" name="username" placeholder="username" autocomplete="off" required>
+      <button type="submit">Unlock</button>
+    </div>
+    <div id="unlock-result" class="qa-result"></div>
+  </form>
+
+  <form class="qa-form"
+        hx-post="/ad/provision"
+        hx-target="#provision-result"
+        hx-swap="innerHTML">
+    <label class="qa-label">Provision account</label>
+    <div class="qa-row">
+      <input type="text" name="first" placeholder="First" autocomplete="off" required>
+      <input type="text" name="last"  placeholder="Last"  autocomplete="off" required>
+      <select name="role">
+        <option value="staff">Staff</option>
+        <option value="student">Student</option>
+      </select>
+      <button type="submit">Create</button>
+    </div>
+    <div id="provision-result" class="qa-result"></div>
+  </form>
+
+</div>
+{{end}}

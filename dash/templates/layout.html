@@ -1,0 +1,62 @@
+{{define "layout"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>jot · dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/static/jot.css">
+  <script src="https://unpkg.com/htmx.org@1.9.12" defer></script>
+  <script src="https://unpkg.com/htmx.org@1.9.12/dist/ext/sse.js" defer></script>
+</head>
+<body hx-ext="sse" sse-connect="/events">
+  <header class="topbar">
+    <div class="brand">jot</div>
+    <div class="health" id="health" hx-get="/health/strip" hx-trigger="load, every 30s" hx-swap="innerHTML">
+      <span class="dot dot-pending"></span> checking…
+    </div>
+    <div class="stamp">{{.Now}}</div>
+  </header>
+
+  <main class="grid">
+    <section class="panel panel-tickets">
+      <h2>Tickets</h2>
+      <div id="tickets"
+           hx-get="/iiq/queue"
+           hx-trigger="load, sse:ticket.new, sse:ticket.updated, sse:ticket.closed"
+           hx-swap="innerHTML">
+        <p class="muted">loading…</p>
+      </div>
+    </section>
+
+    <section class="panel panel-alerts">
+      <h2>Alerts <span class="muted">(XDR)</span></h2>
+      <p class="muted">Cortex XDR panel — wiring in phase 2.</p>
+    </section>
+
+    <section class="panel panel-activity">
+      <h2>Recent activity</h2>
+      <div id="activity"
+           hx-get="/audit/tail"
+           hx-trigger="load, sse:audit.append, every 10s"
+           hx-swap="innerHTML">
+        <p class="muted">loading…</p>
+      </div>
+    </section>
+
+    <section class="panel panel-quick">
+      <h2>Quick actions</h2>
+      <div id="quick-actions"
+           hx-get="/ad/quick"
+           hx-trigger="load"
+           hx-swap="innerHTML">
+        <p class="muted">loading…</p>
+      </div>
+    </section>
+  </main>
+
+  <div id="toast" class="toast"
+       hx-swap-oob="true"
+       hx-target="this"></div>
+</body>
+</html>
+{{end}}

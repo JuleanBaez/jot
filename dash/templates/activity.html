@@ -1,0 +1,18 @@
+{{define "activity"}}
+{{if not .Entries}}
+  <p class="muted">No activity yet. Take or resolve a ticket and it will show up here.</p>
+{{else}}
+  <ul class="activity-list">
+    {{range .Entries}}
+      <li class="activity-row activity-{{.Result}}">
+        <span class="activity-time">{{shortTime .Time}}</span>
+        <span class="activity-actor">{{.Actor}}</span>
+        <span class="activity-action">{{.Action}}</span>
+        {{if .Subject}}<span class="activity-subject">{{shortSubject .Subject}}</span>{{end}}
+        <span class="activity-result activity-result-{{.Result}}">{{.Result}}</span>
+        {{if .Err}}<span class="activity-err" title="{{.Err}}">{{shortSubject .Err}}</span>{{end}}
+      </li>
+    {{end}}
+  </ul>
+{{end}}
+{{end}}

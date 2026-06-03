@@ -1,13 +1,12 @@
 package main
 
 import (
-	"bufio"
-	"encoding/json"
 	"fmt"
 	"os"
 	"strconv"
 	"strings"
-	"time"
+
+	"jot/dash"
 )
 
 const (
@@ -16,337 +15,130 @@ const (
 	ColorCyan       = "\033[36m"
 	ColorReset      = "\033[0m"
 	ColorYellow     = "\033[33m"
-	noNotes         = "No notes found. Try creating a new note first."
+	ColorGreen      = "\033[32m"
+	ColorDim        = "\033[2m"
+	noNotes         = "No notes found. Try: jot <text>"
 )
-
-type Note struct {
-	Timestamp string `json:"timestamp"`
-	Content   string `json:"content"`
-}
-
-func getPath() string {
-
-	// determines the storage location. prioritizes the JOT_PATH and falls back to
-	// a default location in the Documents folder.
-	path := os.Getenv("JOT_PATH")
-
-	if path == "" {
-		homeDir, err := os.UserHomeDir()
-
-		if err != nil {
-			fmt.Println("Error getting home directory:", err)
-			os.Exit(1)
-		}
-
-		path = homeDir + defaultFileName
-	}
-
-	return path
-}
-
-func userInput(userNote []string) {
-	passedNote := strings.Join(userNote, " ")
-
-	formattedTime := time.Now().Format(timestampLayout)
-	finalLine := fmt.Sprintf("%s[%s]%s %s\n", ColorCyan, formattedTime, ColorReset, passedNote)
-
-	findFile(finalLine)
-}
-
-func findFile(noteText string) {
-	filePath := getPath()
-
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	check(err, "Could not open file")
-	defer file.Close()
-
-	_, err = file.WriteString(noteText)
-	check(err, "Error writing note")
-
-	fmt.Println("Note Jotted!")
-}
-
-func viewNote() {
-	file, err := os.Open(getPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Failed to open file")
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		fmt.Println(scanner.Text())
-	}
-}
-
-func searchNote(searchTerm string) {
-	// scans the jot file for lines containing the searchTerm
-	// and prints matching lines to the terminal.
-	file, err := os.Open(getPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Failed to get file")
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-
-		currentLine := scanner.Text()
-
-		if strings.Contains(strings.ToLower(currentLine), strings.ToLower(searchTerm)) {
-			fmt.Println(currentLine)
-		}
-	}
-
-	check(scanner.Err(), "Error reading file")
-}
-
-func deleteNote(searchTerm string) {
-	filePath := getPath()
-	tempPath := filePath + ".tmp"
-
-	originalFile, err := os.Open(filePath)
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Could not open original file")
-	defer originalFile.Close()
-
-	tempFile, err := os.Create(tempPath)
-	check(err, "Could not create temp file")
-
-	scanner := bufio.NewScanner(originalFile)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		// If the line does not contain the search term, write it to the temp file
-		if !strings.Contains(strings.ToLower(line), strings.ToLower(searchTerm)) {
-			tempFile.WriteString(line + "\n")
-		}
-	}
-
-	tempFile.Close()
-	originalFile.Close()
-
-	err = os.Rename(tempPath, filePath)
-	check(err, "Could not rename temp file")
-
-	fmt.Println("Deleted notes matching:", searchTerm)
-}
-
-func tailNote(n int) {
-	file, err := os.Open(getPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Could not find file")
-	defer file.Close()
-
-	buffer := make([]string, n)
-
-	count := 0
-	scanner := bufio.NewScanner(file)
-
-	for scanner.Scan() {
-		buffer[count%n] = scanner.Text()
-		count++
-	}
-
-	check(scanner.Err(), "Error reading file.")
-
-	if count == 0 {
-		return
-	}
-
-	if count < n {
-		for i := 0; i < count; i++ {
-			fmt.Println(buffer[i])
-		}
-	} else {
-		startIndex := count % n
-		for i := 0; i < n; i++ {
-			printIndex := (startIndex + i) % n
-			fmt.Println(buffer[(printIndex)])
-		}
-	}
-}
-
-func exportJSON() {
-	file, err := os.Open(getPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Failed to open file.")
-	defer file.Close()
-
-	var exportedNotes []Note
-
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-
-		line := scanner.Text()
-
-		delimiter := "]" + ColorReset + " "
-
-		parts := strings.SplitN(line, delimiter, 2)
-
-		if len(parts) == 2 {
-			cleanTimestamp := strings.Replace(parts[0], ColorCyan+"[", "", 1)
-			cleanNote := parts[1]
-
-			exportedNotes = append(exportedNotes, Note{
-				Timestamp: cleanTimestamp,
-				Content:   cleanNote,
-			})
-		}
-	}
-
-	check(scanner.Err(), "Error reading file.")
-
-	jsonData, err := json.MarshalIndent(exportedNotes, "", "  ")
-	check(err, "Failed to encode JSON.")
-
-	exportPath := "jot_export.json"
-
-	err = os.WriteFile(exportPath, jsonData, 0644)
-	check(err, "Failed to write JSON file.")
-
-	fmt.Printf("Exported %d notes to %s\n", len(exportedNotes), exportPath)
-}
-
-func printHelp() {
-
-	helpText := fmt.Sprintf(`
-		%sJOT - CLI Note & Task Manager%s
-		Usage: jot <command> [arguments] or jot "your note text"
-
-		%sGENERAL NOTES%s
-		view                Show all jots in chronological order
-		search <term>       Find jots containing a specific word
-		tail [n]            Show the last n jots (default: 5)
-		delete <term>       Remove jots matching a specific term
-
-		%sSTICKY TASKS (PINNED)%s
-		pin <text>          Save a note with a [PIN] tag for tracking
-		board               Display only your pinned sticky notes
-
-		%sDATA & SYSTEM%s
-		export              Export all jots to 'jot_export.json'
-		help                Show this menu
-		
-		%sENVIRONMENT%s
-		JOT_PATH            Set custom storage (Default: ~/Documents/jot.txt)
-		`, ColorCyan, ColorReset, ColorCyan, ColorReset, ColorYellow, ColorReset, ColorCyan, ColorReset, ColorCyan, ColorReset)
-
-	fmt.Println(helpText)
-}
-
-func viewPinned() {
-
-	file, err := os.Open(getPath())
-
-	if os.IsNotExist(err) {
-		fmt.Println(noNotes)
-		return
-	}
-
-	check(err, "Failed to open file.")
-	defer file.Close()
-
-	fmt.Println(ColorYellow + "-- Pinned Notes ---" + ColorReset)
-
-	scanner := bufio.NewScanner(file)
-	found := false
-
-	for scanner.Scan() {
-		line := scanner.Text()
-		if strings.Contains(line, "[PIN]") {
-			fmt.Println(ColorYellow + line + ColorReset)
-			found = true
-		}
-	}
-
-	if !found {
-		fmt.Println("No pinned notes found.")
-	}
-}
 
 func check(err error, message string) {
 	if err != nil {
-		fmt.Printf("%s: %v\n", message, err)
+		fmt.Fprintf(os.Stderr, "error: %s: %v\n", message, err)
 		os.Exit(1)
 	}
 }
 
-func main() {
-	userNote := os.Args[1:]
+func parseDashFlags(args []string) dash.Options {
+	var opts dash.Options
+	for _, a := range args {
+		switch a {
+		case "--no-open", "--headless":
+			opts.NoOpen = true
+		case "--help", "-h":
+			fmt.Print("Usage: jot dash [--no-open]\n\n" +
+				"  Starts the local dashboard (default http://127.0.0.1:8787)\n" +
+				"  and opens it in your browser. Press Ctrl-C to stop.\n\n" +
+				"  --no-open    Do not launch the browser (useful over SSH).\n")
+			os.Exit(0)
+		default:
+			fmt.Fprintf(os.Stderr, "jot dash: unknown flag %q (try --help)\n", a)
+			os.Exit(2)
+		}
+	}
+	return opts
+}
 
-	if len(userNote) == 0 {
+func main() {
+	args := os.Args[1:]
+
+	if len(args) == 0 {
 		printHelp()
 		os.Exit(0)
 	}
 
-	switch userNote[0] {
+	switch args[0] {
 	case "view":
 		viewNote()
 	case "search":
-		if len(userNote) < 2 {
-			fmt.Println("Usage: jot search <search term>")
+		if len(args) < 2 {
+			fmt.Println("Usage: jot search <term>")
 			os.Exit(1)
 		}
-		searchTerm := strings.Join(userNote[1:], " ")
-		searchNote(searchTerm)
+		searchNote(strings.Join(args[1:], " "))
 	case "delete":
-		if len(userNote) < 2 {
-			fmt.Println("Usage: jot delete <search term>")
+		if len(args) < 2 {
+			fmt.Println("Usage: jot delete <term>")
 			os.Exit(1)
 		}
-		searchTerm := strings.Join(userNote[1:], " ")
-		deleteNote(searchTerm)
+		deleteNote(strings.Join(args[1:], " "))
 	case "tail":
-		lineCount := 5
-		if len(userNote) > 1 {
-			parsedNum, err := strconv.Atoi(userNote[1])
-
-			if err == nil && parsedNum > 0 {
-				lineCount = parsedNum
+		n := 5
+		if len(args) > 1 {
+			parsed, err := strconv.Atoi(args[1])
+			if err == nil && parsed > 0 {
+				n = parsed
 			} else {
-				fmt.Println("Invalid number: Using default of 5.")
+				fmt.Println("Invalid number: using default of 5.")
 			}
 		}
-		tailNote(lineCount)
+		tailNote(n)
 	case "export":
 		exportJSON()
 	case "help":
 		printHelp()
 	case "pin":
-		if len(userNote) < 2 {
-			fmt.Println("Usage: jot pin <task>")
+		if len(args) < 2 {
+			fmt.Println("Usage: jot pin <text>")
 			os.Exit(1)
 		}
-		pinnedNote := append([]string{"[PIN]"}, userNote[1:]...)
-		userInput(pinnedNote)
+		userInput(append([]string{"[PIN]"}, args[1:]...))
 	case "board":
-		viewPinned()
+		viewBoard()
+	case "task":
+		if len(args) < 2 {
+			fmt.Println("Usage: jot task <text>")
+			os.Exit(1)
+		}
+		createTask(args[1:])
+	case "tasks":
+		viewTasks()
+	case "done":
+		if len(args) < 2 {
+			fmt.Println("Usage: jot done <term>")
+			os.Exit(1)
+		}
+		markTaskDone(strings.Join(args[1:], " "))
+	case "clear":
+		clearDoneTasks()
+	case "auth":
+		setupGoogleAuth()
+	case "ad":
+		if len(args) < 2 {
+			fmt.Println("Usage: jot ad <command> [args]")
+			fmt.Println("       jot ad help  — list AD commands")
+			os.Exit(1)
+		}
+		handleAD(args[1:])
+	case "onboard":
+		handleOnboard(args[1:])
+	case "dash":
+		opts := parseDashFlags(args[1:])
+		if err := dash.Run(opts); err != nil {
+			fmt.Fprintf(os.Stderr, "dash: %v\n", err)
+			os.Exit(1)
+		}
+	case "iiq":
+		if len(args) < 2 {
+			fmt.Println("Usage: jot iiq debug [flags]")
+			os.Exit(1)
+		}
+		switch args[1] {
+		case "debug":
+			handleIIQDebug(args[2:])
+		default:
+			fmt.Fprintf(os.Stderr, "jot iiq: unknown subcommand %q\n", args[1])
+			os.Exit(2)
+		}
 	default:
-		userInput(userNote)
+		userInput(args)
 	}
 }

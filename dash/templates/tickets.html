@@ -1,0 +1,49 @@
+{{define "ticket_queue"}}
+{{if not .Tickets}}
+  <p class="muted">No open tickets in your queue. ☀️</p>
+{{else}}
+<table class="queue">
+  <thead>
+    <tr>
+      <th>#</th>
+      <th>Subject</th>
+      <th>Requestor</th>
+      <th>Assignee</th>
+      <th>Status</th>
+      <th>Age</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {{range .Tickets}}
+    {{template "ticket_row" .}}
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+{{end}}
+
+{{define "ticket_row"}}
+<tr id="ticket-{{.ID}}" class="ticket-row prio-{{.Priority}}">
+  <td class="mono">{{.TicketID}}</td>
+  <td>{{.Subject}}</td>
+  <td>{{.Requestor}}</td>
+  <td>{{if .Assignee}}{{.Assignee}}{{else}}<span class="muted">unassigned</span>{{end}}</td>
+  <td>{{.StatusName}}</td>
+  <td class="mono">{{.AgeDisplay}}</td>
+  <td class="actions">
+    <button
+      hx-post="/iiq/take/{{.ID}}"
+      hx-target="#ticket-{{.ID}}"
+      hx-swap="outerHTML"
+      hx-confirm="Take ticket {{.TicketID}}?">Take</button>
+    <button
+      class="danger"
+      hx-post="/iiq/resolve/{{.ID}}"
+      hx-target="#ticket-{{.ID}}"
+      hx-swap="outerHTML"
+      hx-prompt="Resolution note (optional):"
+      hx-confirm="Resolve {{.TicketID}}?">Resolve</button>
+  </td>
+</tr>
+{{end}}

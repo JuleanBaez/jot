@@ -1,0 +1,6 @@
+{{define "health_strip"}}
+{{range .Checks}}
+  <span class="dot dot-{{.Level}}" title="{{.Name}}{{if .Detail}} — {{.Detail}}{{end}}"></span>
+  <span class="check-name">{{.Name}}</span>
+{{end}}
+{{end}}
