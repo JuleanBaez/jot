@@ -1,7 +1,7 @@
 # jot
 
-A terminal-native CLI for IT administrators at Wayne Township Public Schools.
-Combines quick note-taking with a full Active Directory automation center —
+A terminal-native CLI for K12 IT administrators.
+Combines quick note-taking with a full Active Directory automation center,
 provisioning accounts, running stale sweeps, triggering ClassLink syncs, and
 firing Cortex XDR isolations, all from a single binary.
 
@@ -54,7 +54,7 @@ jot board             # Show all pinned notes and pending tasks
 ## Active Directory (`jot ad`)
 
 All AD commands require Tailscale to be connected. The binary performs a 2-second
-TCP dial to the AD server before any LDAP operation — if it times out, the command
+TCP dial to the AD server before any LDAP operation, if it times out, the command
 exits immediately with a clear message rather than hanging.
 
 ### Setup
